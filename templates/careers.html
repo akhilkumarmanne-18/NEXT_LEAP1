@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Discover Careers | NEXT LEAP 2.0{% endblock %}
+
+{% block content %}
+<div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+    <div>
+        <h1 class="dashboard-title">AI Career Discovery</h1>
+        <p class="dashboard-subtitle">Explore modern tech roles, measure alignment against your profile, and calibrate your targets.</p>
+    </div>
+    <div style="display:flex;gap:12px;">
+        <button class="btn btn-secondary btn-sm" id="openQuizBtn">
+            <i data-lucide="sparkles"></i>
+            <span>Interactive Discovery Quiz</span>
+        </button>
+        <button class="btn btn-outline btn-sm" id="openCompareBtn">
+            <i data-lucide="columns-2"></i>
+            <span>Compare Careers</span>
+        </button>
+    </div>
+</div>
+
+<!-- Category Filters -->
+<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:14px;margin-bottom:24px;">
+    <button class="btn btn-primary btn-sm category-filter-btn" data-category="All">All Categories</button>
+    <button class="btn btn-secondary btn-sm category-filter-btn" data-category="Data Science">Data Science</button>
+    <button class="btn btn-secondary btn-sm category-filter-btn" data-category="Software Development">Software Development</button>
+    <button class="btn btn-secondary btn-sm category-filter-btn" data-category="Artificial Intelligence">AI & ML</button>
+    <button class="btn btn-secondary btn-sm category-filter-btn" data-category="Cybersecurity">Cybersecurity</button>
+    <button class="btn btn-secondary btn-sm category-filter-btn" data-category="Cloud Computing">Cloud Computing</button>
+    <button class="btn btn-secondary btn-sm category-filter-btn" data-category="UI/UX Design">UI/UX Design</button>
+    <button class="btn btn-secondary btn-sm category-filter-btn" data-category="Business Analytics">Business Analytics</button>
+    <button class="btn btn-secondary btn-sm category-filter-btn" data-category="Product Management">Product Management</button>
+</div>
+
+<!-- Careers Grid -->
+<div id="careerMatchesList">
+    <div class="grid-2">
+        {% for match in matches %}
+        <div class="card career-match-card" data-category="{{ match.career.category }}" style="display:flex;flex-direction:column;justify-content:space-between;">
+            <div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                    <div>
+                        <span class="badge badge-primary">{{ match.career.category }}</span>
+                        <h3 style="margin-top:8px;font-size:1.3rem;">{{ match.career.title }}</h3>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:1.7rem;font-weight:900;color:var(--accent-primary);">{{ match.match_score }}%</div>
+                        <span class="badge {% if match.match_score >= 70 %}badge-success{% else %}badge-warning{% endif %}">
+                            {{ match.recommendation_tag }}
+                        </span>
+                    </div>
+                </div>
+
+                <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:14px;line-height:1.5;">
+                    {{ match.career.description }}
+                </p>
+
+                <!-- Salary & Outlook -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm);margin-bottom:16px;font-size:0.825rem;">
+                    <div>
+                        <span style="color:var(--text-muted);display:block;">Salary Range:</span>
+                        <strong style="color:var(--text-primary);">{{ match.career.salary_range }}</strong>
+                    </div>
+                    <div>
+                        <span style="color:var(--text-muted);display:block;">Market Demand:</span>
+                        <strong style="color:var(--success);">{{ match.career.market_outlook }}</strong>
+                    </div>
+                </div>
+
+                <!-- Skills summary tags -->
+                <div style="margin-bottom:16px;">
+                    <span style="font-size:0.75rem;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:6px;font-weight:700;">Matched Skills:</span>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                        {% for s in match.matched_skills %}
+                            <span class="badge badge-success" style="font-size:0.7rem;">&check; {{ s.name }}</span>
+                        {% else %}
+                            <span style="font-size:0.8rem;color:var(--text-muted);">None recorded yet</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Missing skills teaser -->
+                {% if match.missing_skills %}
+                <div style="margin-bottom:18px;">
+                    <span style="font-size:0.75rem;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:6px;font-weight:700;">Key Skills to Develop:</span>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                        {% for ms in match.missing_skills %}
+                            <span class="badge badge-primary" style="font-size:0.7rem;">+ {{ ms.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="display:flex;gap:10px;padding-top:14px;border-top:1px solid var(--border-color);align-items:center;">
+                <a href="{{ url_for('careers.detail', slug=match.career.slug) }}" class="btn btn-secondary btn-sm" style="flex:1;">
+                    <i data-lucide="book-open"></i>
+                    <span>Full Details</span>
+                </a>
+                {% if target_career_id == match.career.id %}
+                    <span class="badge badge-success" style="padding:8px 14px;">Current Target</span>
+                {% else %}
+                    <button class="btn btn-primary btn-sm btn-set-target" data-career-id="{{ match.career.id }}">
+                        <span>Set as Target</span>
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Comparison Modal -->
+<div class="modal-overlay" id="compareModal">
+    <div class="modal-dialog" style="max-width:760px;">
+        <div class="modal-header">
+            <h3>Side-by-Side Career Comparison</h3>
+            <button style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:1.4rem;" id="closeCompareModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:16px;">
+                Select any two careers to compare skill requirements, compensation benchmarks, and your readiness level side by side.
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Career 1</label>
+                    <select id="compareSelect1" class="form-control">
+                        {% for c in careers %}
+                            <option value="{{ c.id }}">{{ c.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Career 2</label>
+                    <select id="compareSelect2" class="form-control">
+                        {% for c in careers %}
+                            <option value="{{ c.id }}" {% if loop.index == 2 %}selected{% endif %}>{{ c.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="executeCompareBtn" style="width:100%;">Compare Careers</button>
+            <div id="comparisonResults"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Discovery Quiz Modal -->
+<div class="modal-overlay" id="quizModal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3>Interactive Career Discovery Assessment</h3>
+            <button style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:1.4rem;" id="closeQuizModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:18px;">
+                Provide your interests and existing competencies to recalculate your personal career affinity scores.
+            </p>
+            <div class="form-group">
+                <label class="form-label">What areas of technology interest you most?</label>
+                <input type="text" id="quizInterests" class="form-control" value="{{ user.interests }}" placeholder="e.g. AI, Algorithms, Data Analytics, Cloud...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Current Academic Course / Degree</label>
+                <input type="text" id="quizCourse" class="form-control" value="{{ user.current_course }}" placeholder="e.g. Computer Science, Statistics, Mathematics...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Preferred Learning & Work Style</label>
+                <select id="quizLearningStyle" class="form-control">
+                    <option value="Hands-on Project Building">Hands-on Project Building & Coding</option>
+                    <option value="Visual Systems & Design">Visual Systems & Creative UX</option>
+                    <option value="Mathematical Modeling & Theory">Mathematical Modeling & Statistical Research</option>
+                    <option value="Infrastructure & Systems Security">Infrastructure, Cloud & Systems Security</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Enter any skills you already know (comma separated)</label>
+                <input type="text" id="quizSkills" class="form-control" placeholder="e.g. Python, SQL, Git, React, Statistics...">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="submitQuizBtn">Calculate Recommendations</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/careers.js') }}"></script>
+{% endblock %}

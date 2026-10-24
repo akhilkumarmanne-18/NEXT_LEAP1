@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Log In | NEXT LEAP 2.0{% endblock %}
+
+{% block public_content %}
+<div class="container" style="min-height: calc(100vh - 160px); display: flex; align-items: center; justify-content: center; padding: 40px 24px;">
+    <div class="card" style="width: 100%; max-width: 440px; padding: 36px;">
+        <div style="text-align: center; margin-bottom: 28px;">
+            <div class="nav-brand-logo" style="margin: 0 auto 14px; width: 44px; height: 44px; font-size: 1.3rem;">NL</div>
+            <h2 style="font-size: 1.6rem; margin-bottom: 6px;">Welcome Back</h2>
+            <p class="text-secondary" style="font-size: 0.9rem;">Sign in to continue your personalized learning roadmap</p>
+        </div>
+
+        <!-- 1-Click Demo Login Banner for hackathon evaluation -->
+        <div style="background: rgba(79, 124, 255, 0.1); border: 1px dashed var(--accent-primary); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 24px; text-align: center;">
+            <span style="font-size: 0.8rem; color: var(--accent-primary); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Hackathon Evaluator Quick Access</span>
+            <p style="font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 10px;">Test the full system instantly with pre-populated Data Science demo data.</p>
+            <a href="{{ url_for('auth.demo_login') }}" class="btn btn-primary btn-sm" style="width: 100%;">
+                <i data-lucide="zap"></i>
+                <span>Log In as Demo User (Alex Chen)</span>
+            </a>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="email" class="form-control" placeholder="name@domain.com" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label class="form-label" style="margin-bottom: 0;">Password</label>
+                </div>
+                <input type="password" name="password" class="form-control" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                <span>Sign In to Dashboard</span>
+                <i data-lucide="arrow-right"></i>
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 24px; font-size: 0.875rem; color: var(--text-secondary);">
+            Don't have an account yet? <a href="{{ url_for('auth.register') }}" style="font-weight: 600;">Create an account</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

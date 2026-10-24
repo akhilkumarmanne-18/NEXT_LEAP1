@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard | NEXT LEAP 2.0{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+    <div>
+        <h1 class="dashboard-title">Welcome back, {{ user.full_name.split()[0] }}!</h1>
+        <p class="dashboard-subtitle">Your next step is closer than you think. Let's keep moving forward.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a href="{{ url_for('roadmap.index') }}" class="btn btn-secondary btn-sm">
+            <i data-lucide="milestone"></i>
+            <span>View Roadmap</span>
+        </a>
+        <a href="{{ url_for('coach.index') }}" class="btn btn-primary btn-sm">
+            <i data-lucide="bot"></i>
+            <span>Ask AI Coach</span>
+        </a>
+    </div>
+</div>
+
+<!-- 4 Summary Metric Cards -->
+<div class="metrics-grid">
+    <!-- 1. Career Goal -->
+    <div class="metric-card">
+        <div class="metric-top">
+            <span class="metric-label">Target Career Goal</span>
+            <div class="metric-icon-wrap" style="background:rgba(79, 124, 255, 0.15);color:var(--accent-primary);">
+                <i data-lucide="target"></i>
+            </div>
+        </div>
+        <div class="metric-val" style="font-size:1.35rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {{ target_career.title if target_career else user.preferred_career_goal }}
+        </div>
+        <div class="metric-foot">
+            <a href="{{ url_for('careers.index') }}" style="color:var(--accent-primary);">Switch or explore &rarr;</a>
+        </div>
+    </div>
+
+    <!-- 2. Skills Learned -->
+    <div class="metric-card">
+        <div class="metric-top">
+            <span class="metric-label">Skills Recorded</span>
+            <div class="metric-icon-wrap" style="background:rgba(34, 197, 94, 0.15);color:var(--success);">
+                <i data-lucide="check-circle"></i>
+            </div>
+        </div>
+        <div class="metric-val">{{ skills_count }}</div>
+        <div class="metric-foot">
+            <span style="color:var(--success);font-weight:600;">{{ skill_gap.mastered_count if skill_gap else 0 }} Mastered</span> &bull; {{ skill_gap.missing_count if skill_gap else 0 }} to acquire
+        </div>
+    </div>
+
+    <!-- 3. Roadmap Progress -->
+    <div class="metric-card">
+        <div class="metric-top">
+            <span class="metric-label">Roadmap Progress</span>
+            <div class="metric-icon-wrap" style="background:rgba(139, 92, 246, 0.15);color:var(--accent-secondary);">
+                <i data-lucide="trending-up"></i>
+            </div>
+        </div>
+        <div class="metric-val">{{ roadmap_progress }}%</div>
+        <div class="metric-foot">
+            <div class="progress-bar-wrap" style="height:5px;margin-top:6px;">
+                <div class="progress-bar-fill" style="width: {{ roadmap_progress }}%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Projects Completed -->
+    <div class="metric-card">
+        <div class="metric-top">
+            <span class="metric-label">Projects Completed</span>
+            <div class="metric-icon-wrap" style="background:rgba(245, 158, 11, 0.15);color:var(--warning);">
+                <i data-lucide="folder-check"></i>
+            </div>
+        </div>
+        <div class="metric-val">{{ completed_projects_count }}</div>
+        <div class="metric-foot">
+            <a href="{{ url_for('projects.portfolio') }}" style="color:var(--text-secondary);">View public portfolio &rarr;</a>
+        </div>
+    </div>
+</div>
+
+<!-- SIGNATURE COMPONENT: "Your Next LEAP" -->
+<div class="next-leap-card">
+    <div class="next-leap-header">
+        <div class="next-leap-title-group">
+            <div class="avatar avatar-sm" style="background:var(--accent-primary);"><i data-lucide="zap"></i></div>
+            <div>
+                <h3>Your Next LEAP</h3>
+                <span style="font-size:0.775rem;color:var(--text-muted);letter-spacing:0.5px;">SIGNATURE RECOMMENDATION ENGINE</span>
+            </div>
+        </div>
+        <span class="badge badge-warning" id="nextActionPriority">{{ next_action.priority if next_action else 'Recommended' }}</span>
+    </div>
+
+    <div class="next-leap-content">
+        <div>
+            <div class="next-leap-action-text" id="nextActionTitle">
+                {{ next_action.title if next_action else 'Explore core curriculum modules' }}
+            </div>
+            <div class="next-leap-reason" id="nextActionReason">
+                {{ next_action.reason if next_action else 'Addresses an essential milestone along your career path.' }}
+            </div>
+            <div class="next-leap-meta">
+                <div class="next-leap-meta-item">
+                    <i data-lucide="clock" style="width:16px;height:16px;color:var(--accent-primary);"></i>
+                    <span id="nextActionEffort">{{ next_action.estimated_effort if next_action else '30 mins' }}</span>
+                </div>
+                <div class="next-leap-meta-item">
+                    <i data-lucide="award" style="width:16px;height:16px;color:var(--accent-secondary);"></i>
+                    <span>Category: {{ next_action.category if next_action else 'Curriculum' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="next-leap-buttons">
+            <a href="{{ next_action.cta_url if next_action else '/roadmap' }}" class="btn btn-primary" id="nextActionCta">
+                <span>{{ next_action.cta_label if next_action else 'Continue Learning' }}</span>
+                <i data-lucide="arrow-right"></i>
+            </a>
+            <button class="btn btn-secondary" id="btnCompleteNextAction" data-action-id="{{ next_action.id if next_action else '' }}">
+                <i data-lucide="check-circle-2"></i>
+                <span>Mark Done & Next</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Charts Grid (Career Readiness Radar & Weekly Activity) -->
+<div class="dashboard-grid-2">
+    <!-- Chart 1: Career Readiness Radar -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <div>
+                <h3 class="chart-title">Career Readiness Radar</h3>
+                <span style="font-size:0.8rem;color:var(--text-muted);">Current level vs. {{ target_career.title if target_career else 'Industry' }} benchmarks</span>
+            </div>
+            <div class="badge badge-primary">
+                {{ skill_gap.readiness_score if skill_gap else 60 }}% Readiness
+            </div>
+        </div>
+        <div class="chart-canvas-wrap">
+            <canvas id="readinessRadarChart"
+                    data-labels='{{ skill_gap.chart.labels | tojson if skill_gap else "[]" }}'
+                    data-user='{{ skill_gap.chart.user_data | tojson if skill_gap else "[]" }}'
+                    data-target='{{ skill_gap.chart.target_data | tojson if skill_gap else "[]" }}'>
+            </canvas>
+        </div>
+    </div>
+
+    <!-- Chart 2: Weekly Learning Activity -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <div>
+                <h3 class="chart-title">Weekly Learning Pace</h3>
+                <span style="font-size:0.8rem;color:var(--text-muted);">Target: {{ user.weekly_hours or 12 }} hrs / week</span>
+            </div>
+            <div class="badge badge-success">On Track</div>
+        </div>
+        <div class="chart-canvas-wrap">
+            <canvas id="weeklyActivityChart"
+                    data-days='{{ weekly_data.days | tojson }}'
+                    data-actual='{{ weekly_data.actual_hours | tojson }}'
+                    data-target='{{ weekly_data.target_hours | tojson }}'>
+            </canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Tasks & Projects Columns Grid -->
+<div class="dashboard-grid-2">
+    <!-- Upcoming Roadmap Milestones -->
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+            <h3 style="font-size:1.1rem;font-weight:700;">Upcoming Milestones</h3>
+            <a href="{{ url_for('roadmap.index') }}" class="btn btn-outline btn-sm">Full Roadmap</a>
+        </div>
+
+        {% if upcoming_tasks %}
+            {% for task in upcoming_tasks %}
+                <div class="task-item">
+                    <div class="task-left">
+                        <input type="checkbox" class="task-checkbox dashboard-task-checkbox" data-task-id="{{ task.id }}" {% if task.status == 'Completed' %}checked{% endif %}>
+                        <div>
+                            <div class="task-title {% if task.status == 'Completed' %}completed{% endif %}" id="dash-task-title-{{ task.id }}">
+                                {{ task.title }}
+                            </div>
+                            <div class="task-sub">
+                                <span>{{ task.skills_involved }}</span> &bull; <span>Est: {{ task.estimated_hours }}h</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="badge {% if task.status == 'In Progress' %}badge-warning{% else %}badge-primary{% endif %}">
+                        {{ task.status }}
+                    </span>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align:center;padding:24px;color:var(--text-muted);">
+                All current phase tasks completed! Move to next phase in <a href="{{ url_for('roadmap.index') }}">Roadmap</a>.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Recommended Projects & Recent Activities -->
+    <div>
+        <div class="card" style="margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-size:1.1rem;font-weight:700;">Recommended Projects</h3>
+                <a href="{{ url_for('projects.index') }}" style="font-size:0.85rem;">Project Studio &rarr;</a>
+            </div>
+
+            {% for proj in recommended_projects %}
+                <div style="padding:12px;background:var(--bg-secondary);border-radius:var(--radius-sm);margin-bottom:10px;border:1px solid var(--border-color);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                        <strong style="font-size:0.9rem;color:var(--text-primary);">{{ proj.title }}</strong>
+                        <span class="badge badge-primary">{{ proj.difficulty }}</span>
+                    </div>
+                    <p style="font-size:0.8rem;color:var(--text-secondary);margin:0;">{{ proj.description[:90] }}...</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Recent Activities Feed -->
+        <div class="card">
+            <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:14px;">Recent Activities</h3>
+            {% if recent_activities %}
+                {% for act in recent_activities %}
+                    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem;">
+                        <i data-lucide="{{ act.icon }}" style="width:16px;height:16px;color:var(--accent-primary);"></i>
+                        <div style="flex:1;">
+                            <span style="color:var(--text-primary);font-weight:500;">{{ act.title }}</span>
+                        </div>
+                        <span style="color:var(--text-muted);font-size:0.775rem;">{{ act.timestamp }}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:12px;">
+                    Start completing roadmap tasks or practice questions to record your progress feed!
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

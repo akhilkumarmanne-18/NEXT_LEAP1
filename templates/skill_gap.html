@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+
+{% block title %}Skill Gap Analyzer | NEXT LEAP 2.0{% endblock %}
+
+{% block content %}
+<div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+    <div>
+        <h1 class="dashboard-title">Skill Gap Analyzer</h1>
+        <p class="dashboard-subtitle">Quantify your readiness for {{ selected_career.title }}, isolate technical bottlenecks, and formulate learning actions.</p>
+    </div>
+
+    <!-- Career Selector Dropdown -->
+    <div style="display:flex;align-items:center;gap:12px;">
+        <label style="font-size:0.875rem;font-weight:600;color:var(--text-secondary);">Target Role:</label>
+        <select class="form-control" style="width:240px;" onchange="window.location.href='/skill-gap?career_id=' + this.value">
+            {% for c in careers %}
+                <option value="{{ c.id }}" {% if selected_career and selected_career.id == c.id %}selected{% endif %}>{{ c.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<!-- Readiness Summary Banner -->
+<div class="card card-highlight" style="margin-bottom:28px;padding:26px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;">
+        <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                <span class="badge badge-primary">Readiness Assessment</span>
+                <span class="badge badge-success">{{ gap.readiness_badge if gap else 'Analyzing' }}</span>
+            </div>
+            <h2 style="font-size:1.6rem;margin-bottom:4px;">{{ gap.readiness_score if gap else 0 }}% Role Readiness</h2>
+            <p style="color:var(--text-secondary);font-size:0.925rem;max-width:650px;margin:0;">
+                {{ gap.readiness_desc if gap else '' }}
+            </p>
+        </div>
+
+        <div style="display:flex;gap:20px;text-align:center;">
+            <div style="background:var(--bg-secondary);padding:14px 20px;border-radius:var(--radius-sm);border:1px solid var(--border-color);">
+                <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Required</span>
+                <strong style="font-size:1.4rem;">{{ gap.total_required if gap else 0 }}</strong>
+            </div>
+            <div style="background:var(--bg-secondary);padding:14px 20px;border-radius:var(--radius-sm);border:1px solid var(--border-color);">
+                <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Mastered</span>
+                <strong style="font-size:1.4rem;color:var(--success);">{{ gap.mastered_count if gap else 0 }}</strong>
+            </div>
+            <div style="background:var(--bg-secondary);padding:14px 20px;border-radius:var(--radius-sm);border:1px solid var(--border-color);">
+                <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Level-Up</span>
+                <strong style="font-size:1.4rem;color:var(--warning);">{{ gap.level_up_count if gap else 0 }}</strong>
+            </div>
+            <div style="background:var(--bg-secondary);padding:14px 20px;border-radius:var(--radius-sm);border:1px solid var(--border-color);">
+                <span style="font-size:0.75rem;color:var(--text-muted);display:block;">Missing</span>
+                <strong style="font-size:1.4rem;color:var(--danger);">{{ gap.missing_count if gap else 0 }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Split: Radar Chart & Add Skill Form -->
+<div class="dashboard-grid-2">
+    <!-- Chart: Current vs Required Competency Radar -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <div>
+                <h3 class="chart-title">Skill Comparison Radar</h3>
+                <span style="font-size:0.8rem;color:var(--text-muted);">Blue = Your Level &bull; Purple = Role Benchmark</span>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="window.location.reload();">
+                <i data-lucide="refresh-cw"></i>
+                <span>Recalculate</span>
+            </button>
+        </div>
+        <div class="chart-canvas-wrap" style="height:320px;">
+            <canvas id="readinessRadarChart"
+                    data-labels='{{ gap.chart.labels | tojson if gap else "[]" }}'
+                    data-user='{{ gap.chart.user_data | tojson if gap else "[]" }}'
+                    data-target='{{ gap.chart.target_data | tojson if gap else "[]" }}'>
+            </canvas>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:14px;text-align:center;">
+            * Ratings represent educational self-assessments and empirical curriculum milestones, not certified psychometric tests.
+        </p>
+    </div>
+
+    <!-- Quick Add / Update Skill Form -->
+    <div class="card">
+        <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:14px;">Add or Update a Skill</h3>
+        <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:16px;">
+            Keep your skills up to date as you finish courses, projects, or practice modules.
+        </p>
+
+        <form id="addSkillForm">
+            <div class="form-group">
+                <label class="form-label">Skill Name *</label>
+                <input type="text" id="skillNameInput" list="catalogSkillsList" class="form-control" placeholder="e.g. SQL, Python, Docker, React..." required>
+                <datalist id="catalogSkillsList">
+                    {% for sk in catalog_skills %}
+                        <option value="{{ sk.name }}">{{ sk.category }}</option>
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="form-group">
+                    <label class="form-label">Proficiency Level</label>
+                    <select id="skillProfInput" class="form-control">
+                        <option value="Beginner">Beginner (Foundations)</option>
+                        <option value="Intermediate" selected>Intermediate (Applied)</option>
+                        <option value="Advanced">Advanced (Production)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select id="skillCategoryInput" class="form-control">
+                        <option value="Programming">Programming</option>
+                        <option value="Database">Database</option>
+                        <option value="AI/ML">AI & ML</option>
+                        <option value="DevOps">DevOps / Cloud</option>
+                        <option value="Design">Design / UX</option>
+                        <option value="Soft Skills">Soft Skills</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Notes or Projects (Optional)</label>
+                <input type="text" id="skillNotesInput" class="form-control" placeholder="e.g. Completed Kaggle SQL Course, wrote 15 queries">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%;">
+                <i data-lucide="plus"></i>
+                <span>Save Skill & Recalculate Gap</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Detailed Gaps & Recommendations List -->
+<div style="margin-top:28px;">
+    <!-- 1. Urgent & High Priority Missing Skills -->
+    <div class="card" style="margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="badge badge-danger">Critical Missing Skills</div>
+                <h3 style="font-size:1.15rem;font-weight:700;">Required Skills Not Yet Recorded</h3>
+            </div>
+            <span style="font-size:0.85rem;color:var(--text-muted);">{{ gap.missing_skills | length if gap else 0 }} skills</span>
+        </div>
+
+        {% if gap and gap.missing_skills %}
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                {% for ms in gap.missing_skills %}
+                <div style="padding:16px;background:var(--bg-secondary);border-radius:var(--radius-sm);border:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">
+                    <div style="max-width:680px;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                            <strong style="font-size:1rem;color:var(--text-primary);">{{ ms.name }}</strong>
+                            <span class="badge {% if ms.priority == 'Urgent' %}badge-danger{% else %}badge-warning{% endif %}">{{ ms.priority }} Priority</span>
+                            <span style="font-size:0.8rem;color:var(--text-muted);">Target: {{ ms.required_proficiency }}</span>
+                        </div>
+                        <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 6px;">{{ ms.why }}</p>
+                        <div style="font-size:0.825rem;color:var(--accent-primary);">
+                            <strong>Recommended Action:</strong> {{ ms.action }}
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline btn-sm quick-add-skill-btn" data-skill-name="{{ ms.name }}" data-target-prof="{{ ms.required_proficiency }}">
+                            <i data-lucide="check"></i>
+                            <span>Mark Learned</span>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align:center;padding:24px;color:var(--success);">
+                &check; No missing required skills! You have covered all baseline competencies.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 2. Skills Needing Level-Up -->
+    <div class="card" style="margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="badge badge-warning">Level-Up Opportunities</div>
+                <h3 style="font-size:1.15rem;font-weight:700;">Proficiency Upgrades Needed</h3>
+            </div>
+            <span style="font-size:0.85rem;color:var(--text-muted);">{{ gap.level_up_skills | length if gap else 0 }} skills</span>
+        </div>
+
+        {% if gap and gap.level_up_skills %}
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                {% for ls in gap.level_up_skills %}
+                <div style="padding:16px;background:var(--bg-secondary);border-radius:var(--radius-sm);border:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">
+                    <div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                            <strong style="font-size:1rem;color:var(--text-primary);">{{ ls.name }}</strong>
+                            <span class="badge badge-warning">Upgrade: {{ ls.user_proficiency }} &rarr; {{ ls.required_proficiency }}</span>
+                        </div>
+                        <p style="font-size:0.875rem;color:var(--text-secondary);margin:0 0 4px;">{{ ls.why }}</p>
+                        <span style="font-size:0.825rem;color:var(--accent-secondary);">{{ ls.action }}</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary btn-sm quick-upgrade-skill-btn" data-skill-name="{{ ls.name }}" data-target-prof="{{ ls.required_proficiency }}">
+                            <span>Level Up to {{ ls.required_proficiency }}</span>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align:center;padding:20px;color:var(--text-muted);">
+                All acquired skills meet or exceed required minimum proficiency.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 3. Mastered Skills -->
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="badge badge-success">Mastered Competencies</div>
+                <h3 style="font-size:1.15rem;font-weight:700;">Verified In Your Profile</h3>
+            </div>
+            <span style="font-size:0.85rem;color:var(--text-muted);">{{ gap.acquired_skills | length if gap else 0 }} skills</span>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            {% for as_skill in gap.acquired_skills if gap %}
+                <div style="padding:10px 14px;background:var(--bg-secondary);border-radius:var(--radius-sm);border:1px solid var(--border-color);display:flex;align-items:center;gap:10px;">
+                    <i data-lucide="check-circle" style="color:var(--success);width:16px;height:16px;"></i>
+                    <strong style="font-size:0.9rem;">{{ as_skill.name }}</strong>
+                    <span class="badge badge-primary" style="font-size:0.7rem;">{{ as_skill.user_proficiency }}</span>
+                </div>
+            {% else %}
+                <div style="color:var(--text-muted);font-size:0.875rem;padding:10px;">
+                    Add your current skills in the form above to populate your mastered competencies.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Radar chart initialization
+    const readinessCanvas = document.getElementById('readinessRadarChart');
+    if (readinessCanvas && window.Chart) {
+        const ctx = readinessCanvas.getContext('2d');
+        const labels = JSON.parse(readinessCanvas.dataset.labels || '[]');
+        const userData = JSON.parse(readinessCanvas.dataset.user || '[]');
+        const targetData = JSON.parse(readinessCanvas.dataset.target || '[]');
+
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Your Current Level',
+                        data: userData,
+                        backgroundColor: 'rgba(79, 124, 255, 0.25)',
+                        borderColor: '#4F7CFF',
+                        pointBackgroundColor: '#4F7CFF',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Target Benchmark',
+                        data: targetData,
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        borderColor: 'rgba(139, 92, 246, 0.7)',
+                        borderDash: [3, 3],
+                        pointBackgroundColor: '#8B5CF6',
+                        borderWidth: 1.5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#94A3B8', font: { family: 'Inter' } }
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(255, 255, 255, 0.08)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                        pointLabels: { color: '#94A3B8', font: { family: 'Inter', size: 11 } },
+                        ticks: { display: false, min: 0, max: 3, stepSize: 1 }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Add Skill Form Submit
+    const addForm = document.getElementById('addSkillForm');
+    if (addForm) {
+        addForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const skillName = document.getElementById('skillNameInput').value.trim();
+            const proficiency = document.getElementById('skillProfInput').value;
+            const category = document.getElementById('skillCategoryInput').value;
+            const notes = document.getElementById('skillNotesInput').value.trim();
+
+            try {
+                const res = await fetch('/api/skills/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        skill_name: skillName,
+                        proficiency,
+                        category,
+                        notes
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showToast(data.message || 'Error adding skill', 'error');
+                }
+            } catch (err) {
+                showToast('Network error adding skill', 'error');
+            }
+        });
+    }
+
+    // 3. Quick Mark Learned & Quick Level Up buttons
+    document.querySelectorAll('.quick-add-skill-btn, .quick-upgrade-skill-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const skillName = btn.dataset.skillName;
+            const targetProf = btn.dataset.targetProf || 'Intermediate';
+
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/skills/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        skill_name: skillName,
+                        proficiency: targetProf
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.reload(), 800);
+                }
+            } catch (err) {
+                showToast('Failed to update skill', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

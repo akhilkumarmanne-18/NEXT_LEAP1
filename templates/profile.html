@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile | NEXT LEAP 2.0{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-title">Profile Management</h1>
+    <p class="dashboard-subtitle">Update your personal educational profile, availability, and career aspirations.</p>
+</div>
+
+<div class="dashboard-grid-2">
+    <!-- Profile Edit Form -->
+    <div class="card">
+        <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:20px;">Personal & Educational Details</h3>
+
+        <form method="POST" action="{{ url_for('profile.profile') }}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="full_name" class="form-control" value="{{ user.full_name }}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address (Read Only)</label>
+                    <input type="email" class="form-control" value="{{ user.email }}" disabled style="opacity:0.7;">
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Education Level</label>
+                    <select name="education_level" class="form-control">
+                        <option value="High School" {% if user.education_level == 'High School' %}selected{% endif %}>High School</option>
+                        <option value="Undergraduate" {% if user.education_level == 'Undergraduate' %}selected{% endif %}>Undergraduate</option>
+                        <option value="Postgraduate / Master's" {% if user.education_level == "Postgraduate / Master's" %}selected{% endif %}>Postgraduate / Master's</option>
+                        <option value="Bootcamp / Self-Taught" {% if user.education_level == 'Bootcamp / Self-Taught' %}selected{% endif %}>Bootcamp / Self-Taught</option>
+                        <option value="Working Professional" {% if user.education_level == 'Working Professional' %}selected{% endif %}>Working Professional</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Current Course / Major</label>
+                    <input type="text" name="current_course" class="form-control" value="{{ user.current_course or '' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Areas of Interest</label>
+                <input type="text" name="interests" class="form-control" value="{{ user.interests or '' }}">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Preferred Career Goal</label>
+                    <select name="target_career_id" class="form-control">
+                        {% for c in careers %}
+                            <option value="{{ c.id }}" {% if user.target_career_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Weekly Study Hours</label>
+                    <input type="number" name="weekly_hours" class="form-control" value="{{ user.weekly_hours or 12 }}" min="1" max="80">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Learning Style Preference</label>
+                <select name="learning_style" class="form-control">
+                    <option value="Hands-on Project Building" {% if user.learning_style == 'Hands-on Project Building' %}selected{% endif %}>Hands-on Project Building</option>
+                    <option value="Structured Theory & Docs" {% if user.learning_style == 'Structured Theory & Docs' %}selected{% endif %}>Structured Theory & Documentation</option>
+                    <option value="Video Lessons & Tutorials" {% if user.learning_style == 'Video Lessons & Tutorials' %}selected{% endif %}>Video Lessons & Tutorials</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Bio & Career Objective</label>
+                <textarea name="bio" class="form-control" style="min-height:90px;">{{ user.bio or '' }}</textarea>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">GitHub URL</label>
+                    <input type="url" name="github_url" class="form-control" value="{{ user.github_url or '' }}" placeholder="https://github.com/username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">LinkedIn URL</label>
+                    <input type="url" name="linkedin_url" class="form-control" value="{{ user.linkedin_url or '' }}" placeholder="https://linkedin.com/in/username">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top:10px;">
+                <i data-lucide="save"></i>
+                <span>Save Profile Changes</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Skills Management Column -->
+    <div>
+        <div class="card" style="margin-bottom:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-size:1.2rem;font-weight:700;">My Recorded Skills ({{ user_skills | length }})</h3>
+                <a href="{{ url_for('skills.index') }}" class="btn btn-outline btn-sm">Gap Analyzer</a>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto;">
+                {% for us in user_skills %}
+                <div style="padding:12px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <strong style="color:var(--text-primary);display:block;font-size:0.9rem;">{{ us.skill_name }}</strong>
+                        <span style="font-size:0.775rem;color:var(--text-muted);">{{ us.category }} &bull; {{ us.proficiency }}</span>
+                    </div>
+                    <button class="btn btn-outline btn-sm btn-delete-user-skill" data-skill-id="{{ us.id }}" style="padding:4px 8px;color:var(--danger);border-color:rgba(239, 68, 68, 0.3);">
+                        <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                    </button>
+                </div>
+                {% else %}
+                <div style="color:var(--text-muted);font-size:0.875rem;padding:12px;text-align:center;">
+                    No skills recorded. Add your skills in the Skill Gap Analyzer page.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.btn-delete-user-skill').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const skillId = btn.dataset.skillId;
+            if (!confirm('Remove this skill from your profile?')) return;
+            try {
+                const res = await fetch(`/api/skills/delete/${skillId}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    btn.closest('div[style*="padding:12px"]').remove();
+                }
+            } catch (err) {
+                showToast('Failed to delete skill', 'error');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

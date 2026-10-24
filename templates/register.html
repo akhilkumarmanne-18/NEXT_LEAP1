@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Account | NEXT LEAP 2.0{% endblock %}
+
+{% block public_content %}
+<div class="container" style="min-height: calc(100vh - 160px); display: flex; align-items: center; justify-content: center; padding: 40px 24px;">
+    <div class="card" style="width: 100%; max-width: 580px; padding: 36px;">
+        <div style="text-align: center; margin-bottom: 28px;">
+            <div class="nav-brand-logo" style="margin: 0 auto 14px; width: 44px; height: 44px; font-size: 1.3rem;">NL</div>
+            <h2 style="font-size: 1.6rem; margin-bottom: 6px;">Start Your Journey</h2>
+            <p class="text-secondary" style="font-size: 0.9rem;">Join NEXT LEAP 2.0 to unlock your personalized AI career roadmap</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.register') }}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" name="full_name" class="form-control" placeholder="e.g. Maya Patel" value="{{ form.full_name if form else '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Address *</label>
+                    <input type="email" name="email" class="form-control" placeholder="maya@university.edu" value="{{ form.email if form else '' }}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password *</label>
+                <input type="password" name="password" class="form-control" placeholder="Minimum 6 characters" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Education Level</label>
+                    <select name="education_level" class="form-control">
+                        <option value="High School">High School</option>
+                        <option value="Undergraduate" selected>Undergraduate</option>
+                        <option value="Postgraduate / Master's">Postgraduate / Master's</option>
+                        <option value="Bootcamp / Self-Taught">Bootcamp / Self-Taught</option>
+                        <option value="Working Professional">Working Professional</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Current Course / Major</label>
+                    <input type="text" name="current_course" class="form-control" placeholder="e.g. Computer Science, Information Tech" value="{{ form.current_course if form else '' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Areas of Interest</label>
+                <input type="text" name="interests" class="form-control" placeholder="e.g. Data Science, Machine Learning, Web Development, Cybersecurity" value="{{ form.interests if form else '' }}">
+                <span style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-top: 4px;">Helps our discovery engine recommend matching pathways.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Target Career Goal *</label>
+                <select name="preferred_career_goal" class="form-control" required>
+                    {% for c in careers %}
+                        <option value="{{ c.title }}">{{ c.title }} ({{ c.category }})</option>
+                    {% endfor %}
+                </select>
+                <span style="font-size: 0.775rem; color: var(--text-muted); display: block; margin-top: 4px;">You can switch or compare careers anytime from your dashboard.</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 14px;">
+                <span>Create My Learning Account</span>
+                <i data-lucide="arrow-right"></i>
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 24px; font-size: 0.875rem; color: var(--text-secondary);">
+            Already have an account? <a href="{{ url_for('auth.login') }}" style="font-weight: 600;">Sign In</a> &bull; or <a href="{{ url_for('auth.demo_login') }}" style="font-weight: 600;">Explore Demo</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

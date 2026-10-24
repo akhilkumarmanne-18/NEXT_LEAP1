@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Interview Preparation | NEXT LEAP 2.0{% endblock %}
+
+{% block content %}
+<div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+    <div>
+        <h1 class="dashboard-title">Interview Preparation Arena</h1>
+        <p class="dashboard-subtitle">Master technical questions, behavioral STAR narratives, and multiple-choice concept drills.</p>
+    </div>
+    <div style="display:flex;gap:12px;">
+        <div class="badge badge-primary" style="padding:10px 16px;font-size:0.85rem;">
+            Average Score: {{ avg_score }}% ({{ total_attempts }} Attempts)
+        </div>
+    </div>
+</div>
+
+<!-- Category Filters -->
+<div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
+    <a href="{{ url_for('interviews.index', category='Technical') }}" class="btn {% if active_category == 'Technical' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+        <i data-lucide="code"></i>
+        <span>Technical Questions</span>
+    </a>
+    <a href="{{ url_for('interviews.index', category='Quiz') }}" class="btn {% if active_category == 'Quiz' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+        <i data-lucide="help-circle"></i>
+        <span>Multiple Choice Quizzes</span>
+    </a>
+    <a href="{{ url_for('interviews.index', category='Behavioral') }}" class="btn {% if active_category == 'Behavioral' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+        <i data-lucide="users"></i>
+        <span>Behavioral (STAR Method)</span>
+    </a>
+    <a href="{{ url_for('interviews.index', category='All') }}" class="btn {% if active_category == 'All' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+        <span>All Questions</span>
+    </a>
+</div>
+
+<!-- Questions Arena -->
+<div style="display:flex;flex-direction:column;gap:24px;">
+    {% for q in questions %}
+        {% if q.category == 'Quiz' %}
+            <!-- MCQ Quiz Card -->
+            <div class="card quiz-card">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                    <div>
+                        <span class="badge badge-violet">Quick Quiz</span>
+                        <span class="badge badge-secondary" style="margin-left:6px;background:var(--bg-secondary);">{{ q.role_tag }}</span>
+                    </div>
+                    <span class="badge badge-primary">{{ q.difficulty }}</span>
+                </div>
+
+                <h3 style="font-size:1.15rem;margin-bottom:16px;">{{ q.question }}</h3>
+
+                <!-- MCQ Options -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                    {% for opt in q.options %}
+                    <button class="btn btn-secondary quiz-option-btn" data-question-id="{{ q.id }}" style="justify-content:flex-start;text-align:left;padding:12px 16px;">
+                        <span>{{ opt }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <!-- Instant Feedback Area -->
+                <div class="quiz-feedback" style="display:none;padding:14px;background:var(--bg-secondary);border-radius:var(--radius-sm);border:1px solid var(--border-color);"></div>
+            </div>
+        {% else %}
+            <!-- Technical / Behavioral Mock Interview Question Card -->
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                    <div>
+                        <span class="badge {% if q.category == 'Technical' %}badge-primary{% else %}badge-violet{% endif %}">{{ q.category }} Question</span>
+                        <span class="badge badge-secondary" style="margin-left:6px;background:var(--bg-secondary);">{{ q.role_tag }}</span>
+                    </div>
+                    <span class="badge badge-warning">{{ q.difficulty }}</span>
+                </div>
+
+                <h3 style="font-size:1.2rem;margin-bottom:14px;line-height:1.4;">{{ q.question }}</h3>
+
+                <!-- Answer Workspace -->
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="form-label">Your Live Response</label>
+                    <textarea class="form-control" id="answer-text-{{ q.id }}" style="min-height:110px;" placeholder="Formulate your response thoroughly. Explain key principles, tradeoffs, and concrete examples..."></textarea>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.775rem;color:var(--text-muted);">
+                        Evaluated across Relevance, Clarity, Completeness, and Technical Rigor.
+                    </span>
+                    <button class="btn btn-primary btn-sm btn-submit-mock-answer" data-question-id="{{ q.id }}">
+                        <i data-lucide="send"></i>
+                        <span>Submit Answer & Evaluate</span>
+                    </button>
+                </div>
+
+                <!-- Evaluation Result Output Box -->
+                <div id="eval-result-{{ q.id }}" style="display:none;"></div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<!-- Past Attempt History -->
+{% if user_attempts %}
+<div class="card" style="margin-top:36px;">
+    <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:18px;">Recent Practice Attempts</h3>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+        {% for att in user_attempts[:5] %}
+        <div style="padding:14px 18px;background:var(--bg-secondary);border-radius:var(--radius-sm);border:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <div style="max-width:700px;">
+                <strong style="font-size:0.95rem;color:var(--text-primary);display:block;margin-bottom:4px;">{{ att.question }}</strong>
+                <p style="font-size:0.85rem;color:var(--text-secondary);margin:0;">{{ att.feedback }}</p>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:1.5rem;font-weight:800;color:{% if att.score >= 75 %}var(--success){% else %}var(--warning){% endif %};">
+                    {{ att.score }}%
+                </div>
+                <span style="font-size:0.75rem;color:var(--text-muted);">{{ att.created_at.strftime('%b %d, %H:%M') if att.created_at else '' }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/interviews.js') }}"></script>
+{% endblock %}

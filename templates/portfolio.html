@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user.full_name }} | Career Portfolio{% endblock %}
+
+{% block content %}
+<div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+    <div>
+        <h1 class="dashboard-title">My Professional Portfolio</h1>
+        <p class="dashboard-subtitle">A verified showcase of completed software projects, data systems, and acquired competencies.</p>
+    </div>
+    <div>
+        <a href="{{ url_for('projects.index') }}" class="btn btn-secondary btn-sm">
+            <i data-lucide="plus"></i>
+            <span>Add Projects from Studio</span>
+        </a>
+    </div>
+</div>
+
+<!-- Profile Card Showcase Header -->
+<div class="card card-highlight" style="margin-bottom:30px;padding:32px;">
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+        <div class="avatar avatar-lg">{{ user.full_name[0] }}</div>
+        <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+                <h2 style="font-size:1.8rem;">{{ user.full_name }}</h2>
+                <span class="badge badge-primary">{{ user.preferred_career_goal }}</span>
+            </div>
+            <p style="color:var(--text-secondary);font-size:0.95rem;max-width:720px;margin-bottom:12px;line-height:1.6;">
+                {{ user.bio or 'Aspiring technology professional actively mastering industry-standard skills and shipping practical projects.' }}
+            </p>
+            <div style="display:flex;gap:18px;font-size:0.85rem;color:var(--text-muted);flex-wrap:wrap;">
+                <span><i data-lucide="graduation-cap" style="width:16px;height:16px;vertical-align:middle;color:var(--accent-primary);"></i> {{ user.education_level }} &bull; {{ user.current_course }}</span>
+                <span><i data-lucide="clock" style="width:16px;height:16px;vertical-align:middle;color:var(--accent-secondary);"></i> {{ user.weekly_hours }} hrs/week dedicated</span>
+            </div>
+        </div>
+
+        <!-- Social & Repo Links -->
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            {% if user.github_url %}
+                <a href="{{ user.github_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+                    <i data-lucide="github"></i>
+                    <span>GitHub Profile</span>
+                </a>
+            {% endif %}
+            {% if user.linkedin_url %}
+                <a href="{{ user.linkedin_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+                    <i data-lucide="linkedin"></i>
+                    <span>LinkedIn Profile</span>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Competency Badges Section -->
+<div class="card" style="margin-bottom:30px;">
+    <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:16px;">Demonstrated Technical Competencies</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        {% for s in user_skills %}
+            <div style="padding:10px 16px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-sm);display:flex;align-items:center;gap:8px;">
+                <i data-lucide="award" style="width:16px;height:16px;color:var(--accent-primary);"></i>
+                <strong style="font-size:0.925rem;color:var(--text-primary);">{{ s.skill_name }}</strong>
+                <span class="badge {% if s.proficiency == 'Advanced' %}badge-success{% elif s.proficiency == 'Intermediate' %}badge-primary{% else %}badge-warning{% endif %}" style="font-size:0.7rem;">
+                    {{ s.proficiency }}
+                </span>
+            </div>
+        {% else %}
+            <div style="color:var(--text-muted);font-size:0.9rem;">No skills recorded yet. Add your skills in the Skill Gap Analyzer.</div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Published Portfolio Projects Grid -->
+<h3 style="font-size:1.3rem;font-weight:700;margin-bottom:18px;">Featured Projects ({{ portfolio_projects | length }})</h3>
+
+{% if portfolio_projects %}
+    <div class="grid-2">
+        {% for up in portfolio_projects %}
+        <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+            <div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+                    <h4 style="font-size:1.2rem;">{{ up.display_title }}</h4>
+                    <span class="badge badge-success">Completed</span>
+                </div>
+                <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:14px;line-height:1.5;">
+                    {{ up.notes or (up.project.description if up.project else 'Engineered using production-grade best practices.') }}
+                </p>
+
+                {% if up.project and up.project.required_skills %}
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
+                    {% for req in up.project.required_skills %}
+                        <span class="badge badge-primary" style="font-size:0.7rem;">{{ req }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="display:flex;gap:12px;padding-top:14px;border-top:1px solid var(--border-color);">
+                {% if up.repo_url %}
+                    <a href="{{ up.repo_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="flex:1;">
+                        <i data-lucide="github"></i>
+                        <span>Source Code</span>
+                    </a>
+                {% endif %}
+                {% if up.live_url %}
+                    <a href="{{ up.live_url }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="flex:1;">
+                        <i data-lucide="external-link"></i>
+                        <span>Live Demo</span>
+                    </a>
+                {% endif %}
+                {% if not up.repo_url and not up.live_url %}
+                    <span style="font-size:0.8rem;color:var(--text-muted);">Repository link pending in Project Studio</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card" style="text-align:center;padding:50px;">
+        <i data-lucide="folder" style="width:48px;height:48px;color:var(--accent-primary);margin-bottom:14px;"></i>
+        <h3>No Completed Projects in Portfolio Yet</h3>
+        <p class="text-secondary" style="max-width:460px;margin:8px auto 20px;">
+            Head over to the Project Studio, start an industry project, and toggle "Add to Portfolio" when you finish.
+        </p>
+        <a href="{{ url_for('projects.index') }}" class="btn btn-primary">Go to Project Studio</a>
+    </div>
+{% endif %}
+{% endblock %}

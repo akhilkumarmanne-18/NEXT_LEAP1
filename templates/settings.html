@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings | NEXT LEAP 2.0{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="dashboard-title">Platform Settings</h1>
+    <p class="dashboard-subtitle">Manage UI preferences, AI provider configurations, and demo environments.</p>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:24px;max-width:800px;">
+    <!-- 1. Theme Configuration -->
+    <div class="card">
+        <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:14px;">Interface Appearance</h3>
+        <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:18px;">
+            Choose between the premium deep navy dark dashboard or clean light theme.
+        </p>
+
+        <form method="POST" action="{{ url_for('profile.settings') }}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                <label style="cursor:pointer;">
+                    <input type="radio" name="theme" value="dark" {% if user.theme_preference == 'dark' %}checked{% endif %} style="margin-right:8px;">
+                    <strong>Deep Navy Dark Mode (Default)</strong>
+                    <span style="font-size:0.8rem;color:var(--text-muted);display:block;margin-top:4px;">#0B1020 navy aesthetic with electric blue accents</span>
+                </label>
+                <label style="cursor:pointer;">
+                    <input type="radio" name="theme" value="light" {% if user.theme_preference == 'light' %}checked{% endif %} style="margin-right:8px;">
+                    <strong>Clean Light Mode</strong>
+                    <span style="font-size:0.8rem;color:var(--text-muted);display:block;margin-top:4px;">#F8FAFC crisp slate layout with high contrast</span>
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Save Theme Preference</button>
+        </form>
+    </div>
+
+    <!-- 2. AI Engine Configuration -->
+    <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:1.15rem;font-weight:700;">AI Engine & Providers</h3>
+            <span class="badge {% if ai_status.is_llm %}badge-success{% else %}badge-primary{% endif %}">
+                {{ ai_status.label }}
+            </span>
+        </div>
+        <p style="font-size:0.875rem;color:var(--text-secondary);line-height:1.6;margin-bottom:14px;">
+            NEXT LEAP features a hybrid AI architecture. When API credentials (<code style="background:var(--bg-secondary);padding:2px 6px;border-radius:4px;">GEMINI_API_KEY</code> or <code style="background:var(--bg-secondary);padding:2px 6px;border-radius:4px;">OPENAI_API_KEY</code>) are set in the server's <code style="background:var(--bg-secondary);padding:2px 6px;border-radius:4px;">.env</code> file, the coach routes queries through genuine LLM endpoints. 
+            When unconfigured, our deterministic expert system handles queries with rich context matching.
+        </p>
+        <div style="padding:14px;background:var(--bg-secondary);border-radius:var(--radius-sm);border:1px solid var(--border-color);font-size:0.85rem;color:var(--text-secondary);">
+            <strong>Current Mode:</strong> {{ ai_status.mode }} &bull; 
+            <strong>Security:</strong> All credentials remain strictly server-side in environment variables and are never exposed to browser clients.
+        </div>
+    </div>
+
+    <!-- 3. Demo Data Management (Hackathon Reset) -->
+    <div class="card">
+        <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:10px;">Hackathon Demonstration Reset</h3>
+        <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:16px;">
+            Need to reset your demonstration state during evaluation? This button restores the complete Data Science demonstration scenario (milestones, skills, sample project, and interview attempt).
+        </p>
+        <button class="btn btn-secondary btn-sm" id="btnResetDemoData">
+            <i data-lucide="rotate-ccw"></i>
+            <span>Restore Data Science Demo Dataset</span>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const resetBtn = document.getElementById('btnResetDemoData');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', async () => {
+            if (!confirm('This will restore the standard Data Science demo dataset for this account. Proceed?')) return;
+            resetBtn.disabled = true;
+            resetBtn.innerText = 'Restoring...';
+
+            try {
+                const res = await fetch('/api/settings/reset-demo', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.href = '/dashboard', 1200);
+                } else {
+                    showToast(data.message || 'Error resetting demo', 'error');
+                }
+            } catch (err) {
+                showToast('Network error restoring demo dataset', 'error');
+            } finally {
+                resetBtn.disabled = false;
+                resetBtn.innerText = 'Restore Data Science Demo Dataset';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}Project Studio | NEXT LEAP 2.0{% endblock %}
+
+{% block content %}
+<div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+    <div>
+        <h1 class="dashboard-title">Project Studio</h1>
+        <p class="dashboard-subtitle">Transform theoretical knowledge into production-ready software and data artifacts.</p>
+    </div>
+    <div style="display:flex;gap:12px;">
+        <a href="{{ url_for('projects.portfolio') }}" class="btn btn-outline btn-sm">
+            <i data-lucide="briefcase"></i>
+            <span>View My Public Portfolio</span>
+        </a>
+    </div>
+</div>
+
+<!-- Active In-Progress Projects Tracker -->
+{% if user_projects %}
+<div class="card card-highlight" style="margin-bottom:30px;padding:26px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div class="badge badge-primary">Your Workspace</div>
+            <h3 style="font-size:1.25rem;font-weight:700;">Active & Tracked Projects</h3>
+        </div>
+        <span class="badge badge-success">{{ user_projects | length }} in studio</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px;">
+        {% for up in user_projects %}
+        <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+                <div>
+                    <h4 style="font-size:1.1rem;margin-bottom:4px;">{{ up.display_title }}</h4>
+                    <span class="badge {% if up.status == 'Completed' %}badge-success{% else %}badge-warning{% endif %}">{{ up.status }}</span>
+                    {% if up.in_portfolio %}
+                        <span class="badge badge-violet" style="margin-left:6px;"><i data-lucide="check" style="width:12px;height:12px;"></i> In Portfolio</span>
+                    {% endif %}
+                </div>
+                <div style="text-align:right;">
+                    <span style="font-size:1.4rem;font-weight:800;color:var(--accent-primary);">{{ up.progress_percent }}%</span>
+                </div>
+            </div>
+
+            <!-- Progress Slider & Notes Form -->
+            <div style="margin-bottom:14px;">
+                <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">Milestone Progress Bar (0% - 100%):</label>
+                <input type="range" class="form-control" id="progress-slider-{{ up.id }}" value="{{ up.progress_percent }}" min="0" max="100" style="padding:0;height:8px;">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size:0.8rem;">GitHub Repository URL</label>
+                    <input type="url" id="repo-input-{{ up.id }}" class="form-control" value="{{ up.repo_url or '' }}" placeholder="https://github.com/username/project">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size:0.8rem;">Live Demo / Deployment URL</label>
+                    <input type="url" id="live-input-{{ up.id }}" class="form-control" value="{{ up.live_url or '' }}" placeholder="https://my-demo-app.com">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label" style="font-size:0.8rem;">Engineering Notes & Architecture Learnings</label>
+                <textarea id="notes-input-{{ up.id }}" class="form-control" style="min-height:65px;" placeholder="Document key algorithms, design patterns, or obstacles overcome...">{{ up.notes or '' }}</textarea>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <button class="btn btn-primary btn-sm btn-save-project-progress" data-up-id="{{ up.id }}">
+                    <i data-lucide="save"></i>
+                    <span>Save Progress</span>
+                </button>
+                <button class="btn {% if up.in_portfolio %}btn-primary{% else %}btn-secondary{% endif %} btn-sm btn-toggle-portfolio" data-up-id="{{ up.id }}">
+                    <i data-lucide="briefcase"></i>
+                    <span>{% if up.in_portfolio %}In Portfolio{% else %}Add to Portfolio{% endif %}</span>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Catalog Header & Difficulty Filters -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <h3 style="font-size:1.25rem;font-weight:700;">Curated Project Catalog</h3>
+    <div style="display:flex;gap:8px;">
+        <a href="{{ url_for('projects.index') }}" class="btn {% if not active_difficulty %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">All Levels</a>
+        <a href="{{ url_for('projects.index', difficulty='Beginner') }}" class="btn {% if active_difficulty == 'Beginner' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">Beginner</a>
+        <a href="{{ url_for('projects.index', difficulty='Intermediate') }}" class="btn {% if active_difficulty == 'Intermediate' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">Intermediate</a>
+        <a href="{{ url_for('projects.index', difficulty='Advanced') }}" class="btn {% if active_difficulty == 'Advanced' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">Advanced</a>
+    </div>
+</div>
+
+<!-- Project Catalog Grid -->
+<div class="grid-2">
+    {% for proj in catalog_projects %}
+    <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+        <div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                <div>
+                    <span class="badge badge-primary">{{ proj.category }}</span>
+                    <h3 style="margin-top:6px;font-size:1.25rem;">{{ proj.title }}</h3>
+                </div>
+                <span class="badge {% if proj.difficulty == 'Beginner' %}badge-success{% elif proj.difficulty == 'Intermediate' %}badge-warning{% else %}badge-danger{% endif %}">
+                    {{ proj.difficulty }}
+                </span>
+            </div>
+
+            <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px;line-height:1.5;">
+                {{ proj.description }}
+            </p>
+
+            <!-- Required Skills & Tools -->
+            <div style="margin-bottom:14px;">
+                <span style="font-size:0.75rem;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:6px;font-weight:700;">Required Skills:</span>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    {% for sk in proj.required_skills %}
+                        <span class="badge badge-secondary" style="font-size:0.725rem;background:var(--bg-secondary);">{{ sk }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Milestones & Deliverables Breakdown -->
+            <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
+                <strong style="font-size:0.8rem;color:var(--accent-primary);display:block;margin-bottom:8px;">Project Milestones:</strong>
+                <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;font-size:0.825rem;color:var(--text-secondary);">
+                    {% for m in proj.milestones[:3] %}
+                    <li style="display:flex;align-items:flex-start;gap:8px;">
+                        <i data-lucide="check-circle-2" style="width:14px;height:14px;color:var(--accent-primary);flex-shrink:0;margin-top:2px;"></i>
+                        <span>{{ m }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div style="padding-top:14px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;">
+            {% if proj.id in user_project_map %}
+                <span class="badge badge-success"><i data-lucide="check" style="width:12px;height:12px;"></i> Active in Studio</span>
+                <a href="#progress-slider-{{ user_project_map[proj.id].id }}" class="btn btn-secondary btn-sm">Edit Progress</a>
+            {% else %}
+                <span style="font-size:0.8rem;color:var(--text-muted);">Estimated: 12-16 hrs</span>
+                <button class="btn btn-primary btn-sm btn-start-project" data-project-id="{{ proj.id }}">
+                    <i data-lucide="play"></i>
+                    <span>Start Project</span>
+                </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/projects.js') }}"></script>
+{% endblock %}

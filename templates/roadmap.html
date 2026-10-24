@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}My Learning Roadmap | NEXT LEAP 2.0{% endblock %}
+
+{% block content %}
+<div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+    <div>
+        <h1 class="dashboard-title">Personalized Learning Roadmap</h1>
+        <p class="dashboard-subtitle">
+            Tailored curriculum pathway for {{ user.full_name }} aiming for {{ roadmap.career.title if roadmap and roadmap.career else user.preferred_career_goal }}.
+        </p>
+    </div>
+    <div style="display:flex;gap:12px;">
+        <button class="btn btn-secondary btn-sm" id="regenerateRoadmapBtn">
+            <i data-lucide="refresh-cw"></i>
+            <span>Recalibrate Roadmap</span>
+        </button>
+    </div>
+</div>
+
+<!-- Overall Progress Card -->
+<div class="card card-highlight" style="margin-bottom:30px;padding:26px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;">
+        <div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                <span class="badge badge-primary">Curriculum Velocity</span>
+                <span class="badge badge-success">{{ roadmap.completed_tasks if roadmap else 0 }} of {{ roadmap.total_tasks if roadmap else 0 }} Milestones Done</span>
+            </div>
+            <h2 style="font-size:1.6rem;margin-bottom:6px;">{{ roadmap.title if roadmap else 'Learning Pathway' }}</h2>
+            <p style="color:var(--text-secondary);font-size:0.9rem;margin:0;">
+                {{ roadmap.description if roadmap else 'Follow step-by-step milestones to job readiness.' }}
+            </p>
+        </div>
+
+        <div style="text-align:right;min-width:200px;">
+            <div style="font-size:2.2rem;font-weight:900;color:var(--accent-primary);" id="overallRoadmapText">
+                {{ roadmap.progress_percent if roadmap else 0 }}%
+            </div>
+            <div class="progress-bar-wrap" style="height:10px;margin-top:6px;">
+                <div class="progress-bar-fill" id="overallRoadmapBar" style="width: {{ roadmap.progress_percent if roadmap else 0 }}%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5 Phases Visual Timeline -->
+{% if roadmap and roadmap.phases %}
+    {% for phase in roadmap.phases %}
+    <div class="roadmap-phase-card">
+        <div class="roadmap-phase-header">
+            <div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                    <span class="badge {% if phase.progress_percent == 100 %}badge-success{% elif phase.progress_percent > 0 %}badge-warning{% else %}badge-primary{% endif %}">
+                        Phase {{ phase.phase_number }}
+                    </span>
+                    <h3 style="font-size:1.2rem;font-weight:700;">{{ phase.title }}</h3>
+                </div>
+                <p style="color:var(--text-secondary);font-size:0.875rem;margin:0;">{{ phase.description }}</p>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:16px;">
+                <div style="text-align:right;min-width:110px;">
+                    <span style="font-size:0.8rem;color:var(--text-muted);display:block;">Phase Progress</span>
+                    <strong style="color:var(--text-primary);font-size:1rem;" id="phase-text-{{ phase.id }}">{{ phase.progress_percent }}%</strong>
+                    <div class="progress-bar-wrap" style="height:6px;width:100px;margin-top:4px;">
+                        <div class="progress-bar-fill" id="phase-progress-{{ phase.id }}" style="width: {{ phase.progress_percent }}%;"></div>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary btn-sm open-add-task-btn" data-phase-id="{{ phase.id }}" title="Add personal task to this phase">
+                    <i data-lucide="plus"></i>
+                    <span>Add Task</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Task Items in Phase -->
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            {% for task in phase.tasks %}
+            <div class="task-item {% if task.status == 'Completed' %}task-completed{% endif %}" id="task-item-{{ task.id }}">
+                <div class="task-left">
+                    <input type="checkbox"
+                           class="task-checkbox roadmap-task-checkbox"
+                           data-task-id="{{ task.id }}"
+                           data-phase-id="{{ phase.id }}"
+                           {% if task.status == 'Completed' %}checked{% endif %}>
+                    <div>
+                        <div class="task-title {% if task.status == 'Completed' %}completed{% endif %}" id="task-title-{{ task.id }}">
+                            {{ task.title }}
+                            {% if task.is_custom %}
+                                <span class="badge badge-violet" style="font-size:0.65rem;margin-left:6px;">Custom</span>
+                            {% endif %}
+                        </div>
+                        <p style="font-size:0.825rem;color:var(--text-secondary);margin:2px 0 4px;">{{ task.description }}</p>
+                        <div class="task-sub">
+                            <span><i data-lucide="tag" style="width:12px;height:12px;vertical-align:middle;"></i> {{ task.skills_involved }}</span>
+                            &bull; <span><i data-lucide="clock" style="width:12px;height:12px;vertical-align:middle;"></i> {{ task.estimated_hours }} hrs</span>
+                            &bull; <span><i data-lucide="calendar" style="width:12px;height:12px;vertical-align:middle;"></i> Target: {{ task.target_date }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="badge {% if task.status == 'Completed' %}badge-success{% elif task.status == 'In Progress' %}badge-warning{% else %}badge-primary{% endif %}">
+                        {{ task.status }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card" style="text-align:center;padding:50px;">
+        <i data-lucide="milestone" style="width:48px;height:48px;color:var(--accent-primary);margin-bottom:16px;"></i>
+        <h2>No Active Roadmap Found</h2>
+        <p class="text-secondary" style="max-width:480px;margin:8px auto 20px;">
+            Select a target career to automatically generate your tailored 5-phase learning curriculum.
+        </p>
+        <a href="{{ url_for('careers.index') }}" class="btn btn-primary">Discover & Select Career</a>
+    </div>
+{% endif %}
+
+<!-- Add Custom Task Modal -->
+<div class="modal-overlay" id="customTaskModal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3>Add Custom Milestone Task</h3>
+            <button style="background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:1.4rem;" id="closeCustomTaskModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="taskPhaseId">
+            <div class="form-group">
+                <label class="form-label">Task Title *</label>
+                <input type="text" id="taskTitleInput" class="form-control" placeholder="e.g. Read High-Performance SQL Chapter 4" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description & Resources</label>
+                <textarea id="taskDescInput" class="form-control" placeholder="Brief details about what you plan to accomplish..."></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="form-group">
+                    <label class="form-label">Skills Involved</label>
+                    <input type="text" id="taskSkillsInput" class="form-control" placeholder="e.g. SQL, Performance">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Estimated Hours</label>
+                    <input type="number" id="taskHoursInput" class="form-control" value="4" min="1" max="100">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Target Completion Date</label>
+                <input type="text" id="taskDateInput" class="form-control" placeholder="e.g. Nov 15, 2026">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="submitCustomTaskBtn">Save Milestone</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/roadmap.js') }}"></script>
+{% endblock %}

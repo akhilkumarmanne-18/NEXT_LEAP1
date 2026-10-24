@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ current_user.theme_preference if current_user else 'dark' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_name }}{% endblock %} | AI-Powered Career Development</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Flash Notifications Container -->
+    <div class="alert-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <span>{{ message }}</span>
+                        <button style="background:none;border:none;color:inherit;cursor:pointer;font-size:1.1rem;margin-left:12px;" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    {% if current_user %}
+    <!-- Logged In SaaS Dashboard Layout -->
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('dashboard.index') }}" class="nav-brand">
+                    <div class="nav-brand-logo">NL</div>
+                    <span>NEXT LEAP</span>
+                </a>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li class="sidebar-menu-label">Main Navigation</li>
+                <li class="sidebar-item {% if request.path == '/dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.index') }}">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Overview</span>
+                    </a>
+                </li>
+                <li class="sidebar-item {% if '/careers' in request.path %}active{% endif %}">
+                    <a href="{{ url_for('careers.index') }}">
+                        <i data-lucide="compass"></i>
+                        <span>Discover Careers</span>
+                    </a>
+                </li>
+                <li class="sidebar-item {% if request.path == '/skill-gap' %}active{% endif %}">
+                    <a href="{{ url_for('skills.index') }}">
+                        <i data-lucide="bar-chart-2"></i>
+                        <span>Skill Gap Analyzer</span>
+                    </a>
+                </li>
+                <li class="sidebar-item {% if request.path == '/roadmap' %}active{% endif %}">
+                    <a href="{{ url_for('roadmap.index') }}">
+                        <i data-lucide="milestone"></i>
+                        <span>My Roadmap</span>
+                    </a>
+                </li>
+                <li class="sidebar-item {% if request.path == '/projects' %}active{% endif %}">
+                    <a href="{{ url_for('projects.index') }}">
+                        <i data-lucide="folder-code"></i>
+                        <span>Project Studio</span>
+                    </a>
+                </li>
+                <li class="sidebar-item {% if request.path == '/interviews' %}active{% endif %}">
+                    <a href="{{ url_for('interviews.index') }}">
+                        <i data-lucide="messages-square"></i>
+                        <span>Interview Prep</span>
+                    </a>
+                </li>
+                <li class="sidebar-item {% if request.path == '/coach' %}active{% endif %}">
+                    <a href="{{ url_for('coach.index') }}">
+                        <i data-lucide="bot"></i>
+                        <span>AI Career Coach</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-menu-label">Portfolio & Account</li>
+                <li class="sidebar-item {% if request.path == '/portfolio' %}active{% endif %}">
+                    <a href="{{ url_for('projects.portfolio') }}">
+                        <i data-lucide="briefcase"></i>
+                        <span>My Portfolio</span>
+                    </a>
+                </li>
+                <li class="sidebar-item {% if request.path == '/profile' %}active{% endif %}">
+                    <a href="{{ url_for('profile.profile') }}">
+                        <i data-lucide="user"></i>
+                        <span>My Profile</span>
+                    </a>
+                </li>
+                <li class="sidebar-item {% if request.path == '/settings' %}active{% endif %}">
+                    <a href="{{ url_for('profile.settings') }}">
+                        <i data-lucide="settings"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-mini-card">
+                    <div class="avatar avatar-sm">{{ current_user.full_name[0] }}</div>
+                    <div class="user-mini-info">
+                        <div class="user-mini-name">{{ current_user.full_name }}</div>
+                        <div class="user-mini-role">{{ current_user.preferred_career_goal }}</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <main class="app-main">
+            <!-- Topbar Navigation -->
+            <header class="app-topbar">
+                <div class="topbar-left">
+                    <button class="mobile-toggle-btn" id="mobileSidebarToggle">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="search-box">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="globalSearchInput" placeholder="Quick search modules, skills, or careers...">
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+                    <!-- Theme Toggle -->
+                    <button class="icon-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme">
+                        <span id="themeIcon"><i data-lucide="moon"></i></span>
+                    </button>
+
+                    <!-- Notifications Dropdown -->
+                    <div class="dropdown">
+                        <button class="icon-btn" id="notifDropdownBtn" title="Notifications">
+                            <i data-lucide="bell"></i>
+                            {% if unread_notifications_count > 0 %}
+                                <span class="notif-badge"></span>
+                            {% endif %}
+                        </button>
+                        <div class="dropdown-menu" id="notifDropdownMenu">
+                            <div style="padding:12px 16px;border-bottom:1px solid var(--border-color);font-weight:700;display:flex;justify-content:space-between;align-items:center;">
+                                <span>Notifications</span>
+                                <span class="badge badge-primary">{{ unread_notifications_count }} Unread</span>
+                            </div>
+                            <div style="max-height:280px;overflow-y:auto;">
+                                {% if current_user.notifications.count() > 0 %}
+                                    {% for notif in current_user.notifications.order_by(current_user.notifications.column_descriptions[0]['entity'].created_at.desc()).limit(5) %}
+                                        <div class="dropdown-item">
+                                            <strong style="color:var(--text-primary);display:block;font-size:0.85rem;">{{ notif.title }}</strong>
+                                            <p style="margin:4px 0 0;font-size:0.8rem;color:var(--text-secondary);">{{ notif.message }}</p>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div style="padding:16px;text-align:center;color:var(--text-muted);font-size:0.85rem;">No notifications right now.</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Avatar & Profile Quick Link -->
+                    <a href="{{ url_for('profile.profile') }}" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+                        <div class="avatar avatar-sm">{{ current_user.full_name[0] }}</div>
+                        <span style="font-size:0.875rem;font-weight:600;color:var(--text-primary);" class="desktop-only">{{ current_user.full_name.split()[0] }}</span>
+                    </a>
+
+                    <!-- Logout Link -->
+                    <a href="{{ url_for('auth.logout') }}" class="icon-btn" title="Sign Out">
+                        <i data-lucide="log-out"></i>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Page Body -->
+            <div class="page-content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    {% else %}
+    <!-- Public / Landing Page Layout -->
+    <header class="landing-nav container">
+        <a href="{{ url_for('landing') }}" class="nav-brand">
+            <div class="nav-brand-logo">NL</div>
+            <span>NEXT LEAP 2.0</span>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#careers">Discover Careers</a></li>
+            <li><a href="#skill-gap">Skill Gap Analyzer</a></li>
+            <li><a href="#roadmap">Roadmap</a></li>
+            <li><a href="#projects">Project Studio</a></li>
+            <li><a href="#interviews">Interview Prep</a></li>
+            <li><a href="#faq">FAQ</a></li>
+        </ul>
+
+        <div class="nav-actions">
+            <!-- Theme Toggle -->
+            <button class="icon-btn" id="themeToggleBtn" title="Toggle Theme" style="margin-right:6px;">
+                <span id="themeIcon"><i data-lucide="moon"></i></span>
+            </button>
+            <a href="{{ url_for('auth.demo_login') }}" class="btn btn-outline btn-sm">Demo Mode</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-sm">Log In</a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Get Started</a>
+        </div>
+    </header>
+
+    {% block public_content %}{% endblock %}
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="nav-brand" style="margin-bottom:14px;">
+                    <div class="nav-brand-logo">NL</div>
+                    <span>NEXT LEAP 2.0</span>
+                </div>
+                <p style="color:var(--text-secondary);font-size:0.9rem;max-width:320px;margin-bottom:16px;">
+                    {{ app_tagline }}
+                </p>
+                <div class="badge badge-primary">AI-Powered Career Architecture</div>
+            </div>
+
+            <div class="footer-col">
+                <h4>Platform Modules</h4>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('auth.register') }}">Career Discovery</a></li>
+                    <li><a href="{{ url_for('auth.register') }}">Skill Gap Analyzer</a></li>
+                    <li><a href="{{ url_for('auth.register') }}">Personalized Roadmap</a></li>
+                    <li><a href="{{ url_for('auth.register') }}">Project Studio</a></li>
+                    <li><a href="{{ url_for('auth.register') }}">Interview Preparation</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Resources</h4>
+                <ul class="footer-links">
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#faq">Frequently Asked Questions</a></li>
+                    <li><a href="{{ url_for('auth.demo_login') }}">Live Hackathon Demo</a></li>
+                    <li><a href="{{ url_for('auth.login') }}">Student Sign In</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Contact & About</h4>
+                <p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:10px;">
+                    Built for ambitious students, graduates, and career changers worldwide.
+                </p>
+                <p style="color:var(--text-muted);font-size:0.85rem;">
+                    Email: support@nextleap.demo
+                </p>
+            </div>
+        </div>
+
+        <div class="container footer-bottom">
+            <span>&copy; 2026 NEXT LEAP 2.0. All rights reserved.</span>
+            <span>NEXT LEAP doesn't just tell you where you could go. It helps you decide what to do next.</span>
+        </div>
+    </footer>
+    {% endif %}
+
+    <!-- Global Scripts -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
